@@ -22,6 +22,7 @@
 #include <boost/bind.hpp>
 
 #include <iostream>
+#include <fstream>
 #include <cmath>
 
 using namespace std;
@@ -39,8 +40,12 @@ public:
 	RegisterCommand( "Setoffset", boost::bind(&SinosController::SetOffset, this, _1, _2), "asdf");
 	RegisterCommand( "Setperiod", boost::bind(&SinosController::SetPeriod, this, _1, _2), "asdf");
 	RegisterCommand( "Oscillation", boost::bind(&SinosController::SetOscillation, this, _1, _2), "asdf");
+	RegisterCommand( "Getpos1", boost::bind( &SinosController::Getpos1, this, _1, _2), "" );
 	RegisterCommand( "Record_on" , boost::bind(&SinosController::RecordOn, this, _1, _2), "asdf");
+	RegisterCommand( "Record_on_phi", boost::bind(&SinosController::RecordOnPhi, this, _1, _2), "" );
+	RegisterCommand( "Record_on_ref", boost::bind(&SinosController::RecordOnRef, this, _1, _2), "" );
 	RegisterCommand( "Record_off", boost::bind(&SinosController::RecordOff, this, _1, _2), "asdf");
+	RegisterCommand( "Reset_controller", boost::bind( &SinosController::Reset_controller, this, _1, _2), "");
 
 	_penv = penv;
     }
@@ -116,6 +121,9 @@ public:
 	    //-- Calculate the next positions
 	    SetRefPos();
 	}
+
+	Vector vfin = _probot->GetCenterOfMass();
+	trajFile << vfin.y << " " << (-1) * vfin.x << std::endl;
     }
 
     bool SetAmplitude( std::ostream& os, std::istream& is)
@@ -178,6 +186,23 @@ public:
 	return true;
     }
 
+    bool Getpos1( std::ostream& os, std::istream& is)
+    {
+	unsigned int servo;
+	stringstream os2, is2;
+	is >> servo;
+
+	is2 << "getpos1 " << servo << " ";
+	_pservocontroller->SendCommand(os,is2);
+	return true;
+    }
+
+    bool Reset_controller( std::ostream& os, std::istream& is)
+    {
+	Reset(0);
+	return true;
+    }
+
     bool RecordOn( std::ostream& os, std::istream& is)
     {
 	string file;
@@ -190,6 +215,33 @@ public:
 
 	return true;
     }
+
+    bool RecordOnPhi( std::ostream& os, std::istream& is)
+    {
+	string file;
+	stringstream os2, is2;
+
+	is >> file;
+
+	is2 << "record_on_phi " << file << " ";
+	_pservocontroller->SendCommand(os2,is2);
+
+	return true;
+    }
+
+    bool RecordOnRef( std::ostream& os, std::istream& is)
+    {
+	string file;
+	stringstream os2, is2;
+
+	is >> file;
+
+	is2 << "record_on_ref " << file << " ";
+	_pservocontroller->SendCommand(os2,is2);
+
+	return true;
+    }
+
 
     bool RecordOff( std::ostream& os, std::istream& is)
     {
@@ -253,6 +305,7 @@ protected:
     std::vector<dReal> _amplitude; //-- Oscillation amplitudes
     std::vector<dReal> _phase0;    //-- Oscillation initial phase
     std::vector<dReal> _offset;    //-- Oscillation offset
+    ofstream trajFile;		   //-- Stream file for storing the position coordinates of the robot
 };
 
 #endif
