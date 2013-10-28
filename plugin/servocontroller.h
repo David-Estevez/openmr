@@ -47,7 +47,8 @@ public:
 	RegisterCommand("Getpos1",boost::bind(&ServoController::GetPos1,this,_1,_2),"Format: Getpos servo. Returns the current servo position (in degrees, in the range [-90,90]. The argument servo is the servo number, starting from 0");
 	RegisterCommand("Record_on",boost::bind(&ServoController::RecordOn,this,_1,_2),"Format: Record_on file. Start recording the servo position in the specified file. It will generate an octave file ");
 	RegisterCommand("Record_off",boost::bind(&ServoController::RecordOff,this,_1,_2),"Format: Record_off. Stop recording. The octave file is generated ");
-
+	RegisterCommand("Record_on_phi", boost::bind(&ServoController::RecordOnPhi,this, _1, _2), "Format: Record_on_phi file. Starts recording the actual servo angles in the specified file. It will generate an octave file.");
+	RegisterCommand("Record_on_ref", boost::bind(&ServoController::RecordOnRef,this, _1, _2), "Format: Record_on_ref file. Starts recording the reference servo angles in the specified file. It will generate an octave file.");
 	_penv = penv;
     }
 
@@ -72,6 +73,8 @@ public:
 	//-- Recording Mode
 	//----------------------------------
 	_recording = false;
+	_recording_phi=false;
+	_recording_ref=false;
 
 	_phi_tvec.resize( _joints.size() );
 	_ref_tvec.resize( _joints.size() );
@@ -141,6 +144,14 @@ public:
 	    {
 		_phi_tvec[i].push_back(angles[0]);
 		_ref_tvec[i].push_back(_ref_pos[i]);
+	    }
+
+	    if (_recording_phi) {
+	      _phi_tvec[i].push_back(angles[0]);
+	    }
+
+	    if (_recording_ref) {
+	      _ref_tvec[i].push_back(_ref_pos[i]);
 	    }
 	}
 
@@ -310,6 +321,84 @@ public:
 
     }
 
+    //-- Record On Phi command
+    //-----------------------------------------------------
+    //-- Start recording the actual servo position in the
+    //-- specified file.
+    //-- Format: Record_on filepath
+    //-- Note: It will generate an octave data file
+
+    bool RecordOnPhi(std::ostream& os, std::istream& is)
+    {
+	std::string fileName;
+
+	//-- Check current status:
+	if ( !_recording_ref )
+	{
+	    if ( is )
+	    {
+		fileName.erase();
+		is >> fileName;
+
+		outDataFilePath = fileName + ".txt";
+		outScriptFilePath = fileName + ".m";
+
+		//-- Resize the data vectors
+		for (size_t i=0; i<_joints.size(); i++)
+		{
+		  _phi_tvec[i].resize(0);
+		  _ref_tvec[i].resize(0);
+		}
+
+		//-- Setting the recording mode on
+		_recording_phi=true;
+
+		std::cout << "[servocontroller] RECORDING (phi) on: \"" << outDataFilePath << "\"\n";
+
+		return true;
+
+	    }
+	}
+
+	return false;
+
+    }
+
+    bool RecordOnRef(std::ostream& os, std::istream& is)
+    {
+	std::string fileName;
+
+	//-- Check current status:
+	if ( !_recording_ref )
+	{
+	    if ( is )
+	    {
+		fileName.erase();
+		is >> fileName;
+
+		outDataFilePath = fileName + ".txt";
+		outScriptFilePath = fileName + ".m";
+
+		//-- Resize the data vectors
+		for (size_t i=0; i<_joints.size(); i++)
+		{
+		  _phi_tvec[i].resize(0);
+		  _ref_tvec[i].resize(0);
+		}
+
+		//-- Setting the recording mode on
+		_recording_phi=true;
+
+		std::cout << "[servocontroller] RECORDING (phi) on: \"" << outDataFilePath << "\"\n";
+
+		return true;
+
+	    }
+	}
+
+	return false;
+
+    }
 
     //-- Record Off command
     //--------------------------------------------------------
@@ -352,6 +441,50 @@ public:
 		std::cout << "[servocontroller] Max vel: " << _joints[0]->GetMaxVel() << std::endl;
 		return false;
 	    }
+	}
+	else if ( _recording_phi )
+	{
+	    //-- Open the file:
+	    ofstream outScriptFile( outScriptFilePath.c_str() );
+
+	    //-- Restore state:
+	    _recording_phi = false;
+
+	    //-- Generate the data:
+	    if ( outScriptFile.is_open() )
+	    {
+		generate_octave_file_phi( outScriptFile );
+	    }
+
+	    //-- Close the file:
+	    outScriptFile.close();
+
+	    //-- Show message:
+	    std::cout << "[servocontroller] RECORDING off" << std::endl;
+	    std::cout << "[servocontroller] Max vel: " << _joints[0]->GetMaxVel() << std::endl;
+	    return true;
+	}
+	else if ( _recording_ref )
+	{
+	    //-- Open the file:
+	    ofstream outScriptFile( outScriptFilePath.c_str() );
+
+	    //-- Restore state:
+	    _recording_ref = false;
+
+	    //-- Generate the data:
+	    if ( outScriptFile.is_open() )
+	    {
+		generate_octave_file_ref( outScriptFile );
+	    }
+
+	    //-- Close the file:
+	    outScriptFile.close();
+
+	    //-- Show message:
+	    std::cout << "[servocontroller] RECORDING off" << std::endl;
+	    std::cout << "[servocontroller] Max vel: " << _joints[0]->GetMaxVel() << std::endl;
+	    return true;
 	}
 
 	return false;
@@ -579,6 +712,105 @@ private:
 	outFile << "pause;" << endl;
     }
 
+    void generate_octave_file_phi(ofstream& outFile )
+    {
+      size_t size = _phi_tvec[0].size();
+      //cout << "Size: " << size << endl;
+
+      //-- Servos angle
+      for (size_t s=0; s<_phi_tvec.size(); s++) {
+	outFile << "phi" << s <<"=[";
+	for (size_t t=0; t<size; t++) {
+	  outFile << _phi_tvec[s][t]*180/PI << ",";
+	}
+	outFile << "];" << endl;
+      }
+
+      //-- Time
+      outFile << "t=[0:1:" << size-1 << "];" << endl;
+
+      //-- Plot the servo angles
+      outFile << "plot(";
+      for (size_t s=0; s<_phi_tvec.size(); s++) {
+	outFile << "t,phi" << s << ",'-'";
+
+	//-- Add a ',' except for the last element
+	if (s<_phi_tvec.size()-1)
+	  outFile << ",";
+      }
+      outFile << ");" << endl;
+
+
+      //-- Add the legents
+      outFile << "legend(";
+      for (size_t s=0; s<_phi_tvec.size(); s++) {
+	outFile << "'Servo " << s << "'";
+
+	//-- Add a ',' except for the last element
+	if (s<_phi_tvec.size()-1)
+	  outFile << ",";
+      }
+      outFile << ");" << endl;
+
+
+      outFile << "grid on;" << endl;
+      outFile << "title('Servos angle')" << endl;
+      outFile << "xlabel('Simulation time')" << endl;
+      outFile << "ylabel('Angle (degrees)')" << endl;
+      outFile << "axis([0," << size-1 << ",-90, 90])" << endl;
+      outFile << "pause;" << endl;
+    }
+
+    void generate_octave_file_ref( ofstream& outFile )
+    {
+      size_t size = _ref_tvec[0].size();
+      //cout << "Size: " << size << endl;
+
+      //-- Reference positions
+      for (size_t s=0; s<_ref_tvec.size(); s++) {
+	outFile << "ref" << s <<"=[";
+	for (size_t t=0; t<size; t++) {
+	  outFile << _ref_tvec[s][t]*180/PI << ",";
+	}
+	outFile << "];" << endl;
+      }
+
+      //-- Time
+      outFile << "t=[0:1:" << size-1 << "];" << endl;
+
+      //-- Plot the reference positions
+      outFile << "hold on;";
+      outFile << "plot(";
+      for (size_t s=0; s<_ref_tvec.size(); s++) {
+	outFile << "t,ref" << s << ",'-'";
+
+	//-- Add a ',' except for the last element
+	if (s<_ref_tvec.size()-1)
+	  outFile << ",";
+      }
+      outFile << ");" << endl;
+
+
+      //-- Add the legents
+      outFile << "legend(";
+      for (size_t s=0; s<_phi_tvec.size(); s++) {
+	outFile << "'Servo " << s << "'";
+
+	//-- Add a ',' except for the last element
+	if (s<_phi_tvec.size()-1)
+	  outFile << ",";
+      }
+      outFile << ");" << endl;
+
+
+      outFile << "grid on;" << endl;
+      outFile << "title('Servos angle')" << endl;
+      outFile << "xlabel('Simulation time')" << endl;
+      outFile << "ylabel('Angle (degrees)')" << endl;
+      outFile << "axis([0," << size-1 << ",-90, 90])" << endl;
+      outFile << "pause;" << endl;
+    }
+
 protected:
     EnvironmentBasePtr _penv;
     RobotBasePtr _probot;
@@ -587,15 +819,17 @@ protected:
 
     ControllerBasePtr _pvelocitycontroller;
     std::vector<KinBody::JointPtr> _joints;
-    std::vector<dReal> _ref_pos;		//-- Reference positions (in radians)
+    std::vector<dReal> _ref_pos;	//-- Reference positions (in radians)
     dReal _KP;				//-- P controller KP constant
 
     //-- For recording...
     std::string outDataFilePath;         //-- Path to the file for storing the servo positions
     std::string outScriptFilePath;	 //-- Path to the script for printing the beautiful graphs
     bool _recording;			 //-- Recording mode state
+    bool _recording_phi;                 //-- Recording mode for the actual servo angle
+    bool _recording_ref;	         //-- Recording mode for the reference servo angle
     std::vector<tvector> _phi_tvec;	 //-- Temporary storage for the servo's angles in time
-    std::vector<tvector> _ref_tvec;       //-- Temporary storage for the servo's reference positions in time
+    std::vector<tvector> _ref_tvec;      //-- Temporary storage for the servo's reference positions in time
 
 };
 
