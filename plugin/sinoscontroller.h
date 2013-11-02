@@ -42,8 +42,6 @@ public:
 	RegisterCommand( "Oscillation", boost::bind(&SinosController::SetOscillation, this, _1, _2), "asdf");
 	RegisterCommand( "Getpos1", boost::bind( &SinosController::Getpos1, this, _1, _2), "" );
 	RegisterCommand( "Record_on" , boost::bind(&SinosController::RecordOn, this, _1, _2), "asdf");
-	RegisterCommand( "Record_on_phi", boost::bind(&SinosController::RecordOnPhi, this, _1, _2), "" );
-	RegisterCommand( "Record_on_ref", boost::bind(&SinosController::RecordOnRef, this, _1, _2), "" );
 	RegisterCommand( "Record_off", boost::bind(&SinosController::RecordOff, this, _1, _2), "asdf");
 	RegisterCommand( "Reset_controller", boost::bind( &SinosController::Reset_controller, this, _1, _2), "");
 
@@ -211,32 +209,6 @@ public:
 	is >> file;
 
 	is2 << "record_on " << file << " ";
-	_pservocontroller->SendCommand(os2,is2);
-
-	return true;
-    }
-
-    bool RecordOnPhi( std::ostream& os, std::istream& is)
-    {
-	string file;
-	stringstream os2, is2;
-
-	is >> file;
-
-	is2 << "record_on_phi " << file << " ";
-	_pservocontroller->SendCommand(os2,is2);
-
-	return true;
-    }
-
-    bool RecordOnRef( std::ostream& os, std::istream& is)
-    {
-	string file;
-	stringstream os2, is2;
-
-	is >> file;
-
-	is2 << "record_on_ref " << file << " ";
 	_pservocontroller->SendCommand(os2,is2);
 
 	return true;
