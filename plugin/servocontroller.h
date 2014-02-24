@@ -27,6 +27,9 @@
 #include <fstream>
 #include <cmath>
 
+#define OPENMR_VERSION_MAJOR 2
+#define OPENMR_VERSION_MINOR 0
+
 using namespace std;
 using namespace OpenRAVE;
 
@@ -38,7 +41,7 @@ class ServoController : public ControllerBase
 public:
     ServoController(EnvironmentBasePtr penv, std::istream& ss)  : ControllerBase(penv)
     {
-	__description = "Servo controller by Juan Gonzalez-Gomez and Rosen Diankov, updated by David Estevez-Fernandez";
+	__description = "Servo controller by Juan Gonzalez-Gomez and Rosen Diankov, updated by David Estevez-Fernandez. Version: 2.0";
 
 	RegisterCommand("Test",boost::bind(&ServoController::Test,this,_1,_2),"Command for testing and debugging");
 	RegisterCommand("Setpos",boost::bind(&ServoController::SetPos,this,_1,_2),"Format: Setpos s1 [s2]. Set the reference position of all the robot joints, in degrees, in the range [-90,90]. If the robot have N joints, there have to be N arguments");
@@ -75,7 +78,7 @@ public:
 	_phi_tvec.resize( _joints.size() );
 	_ref_tvec.resize( _joints.size() );
 
-	std::cout << "[servocontroller] INIT" << std::endl;
+    std::cout << "[servocontroller] INIT Version: " << OPENMR_VERSION_MAJOR << "." << OPENMR_VERSION_MINOR << std::endl;
 
 	Reset(0);
 
@@ -199,7 +202,7 @@ public:
 	is >> angle;
 
 	//-- Prevent invalid values
-	if (servoIndex < 0 || servoIndex >= (int) _ref_pos.size() )
+    if (servoIndex < 0 || servoIndex >= (int) _ref_pos.size() )
 	    return false;
 
 	//-- Store the reference positions in radians
