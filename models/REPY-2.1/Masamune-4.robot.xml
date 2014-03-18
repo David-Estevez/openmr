@@ -28,7 +28,7 @@
         			<Body>M1_Head</Body>
        				<Body>M2_Body</Body>
         			<axis>0 1 0</axis>
-       				<anchor>0 0.0826354 0</anchor>
+       				<anchor>0 0.0413177 0</anchor>
        				<maxtorque>0.4</maxtorque>
         			<maxvel>4.5</maxvel>
         			<limitsdeg>0 0</limitsdeg>
@@ -42,7 +42,7 @@
 				<Joint name="dummy2" type="hinge" enable="false">
         			<Body>M1_Head</Body>
        				<Body>M3_Body</Body>
-        			<axis>0 1 0</axis>
+        			<axis>1 0 0</axis>
        				<anchor>0.0258177 0.01 0</anchor>
        				<maxtorque>0.4</maxtorque>
         			<maxvel>4.5</maxvel>
@@ -57,7 +57,7 @@
 				<Joint name="dummy3" type="hinge" enable="false">
         			<Body>M2_Head</Body>
        				<Body>M4_Body</Body>
-        			<axis>0 1 0</axis>
+        			<axis>-1 0 0</axis>
        				<anchor>-0.0258177 0.0926354 0</anchor>
        				<maxtorque>0.4</maxtorque>
         			<maxvel>4.5</maxvel>

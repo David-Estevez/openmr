@@ -1,0 +1,34 @@
+<KinBody name="REPY-2.1-dummy">
+   <Body name="Body" type="dynamic">
+      <Mass type="mimicgeom">
+       <total>0.05</total>
+     </Mass>
+     <Geom type="box">
+       <Extents>0.0275 0.02065885 0.0275</Extents>
+       <diffuseColor>0.05 0.05 0.05</diffuseColor>
+       <translation>0 -0.02065885 0</translation>
+     </Geom>
+    </Body>
+
+    <Body name="Head" type="dynamic">
+      <Mass type="mimicgeom">
+       <total>0.05</total>
+     </Mass>
+     <Geom type="box">
+       <Extents>0.0275 0.02065885 0.0275</Extents>
+       <diffuseColor>1 0.4 0</diffuseColor>
+       <translation>0 0.02065885 0</translation>
+     </Geom>
+    </Body>
+
+    <Joint type="hinge" name="servo-futaba3003">
+      <Body>Body</Body>
+      <Body>Head</Body>
+      <axis>1 0 0</axis>
+      <anchor>0 0 0</anchor>
+      <maxtorque>0.4</maxtorque>
+      <maxvel>4.5</maxvel>
+      <limitsdeg>-90 90</limitsdeg>
+    </Joint>
+</KinBody>
+
